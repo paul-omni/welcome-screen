@@ -6,6 +6,9 @@
 //                        Together these two headers scope the call to ONE office.
 //   • timezone         — IANA tz (e.g. "America/Chicago"). "Today" is computed in
 //                        THIS zone so each office fetches only its own local day.
+//   • demo (optional)  — if true, ALWAYS serves fake (PHI-free) data, even in
+//                        production with a real key. Safe to share publicly (e.g.
+//                        the "demo" office → /demo).
 //   • passcode         — only used if REQUIRE_PASSCODE is on in api/schedule.js
 //   • providers        — the office's doctors (configurable). Shown in mock mode
 //                        and offered as suggestions for walk-ins.
@@ -126,6 +129,28 @@ export const OFFICES = {
       "accentDeep": "#5054b0",
       "accentSoft": "#b3b6ea",
       "welcomeMsg": "Welcome in — we're glad you're here today."
+    }
+  },
+  "demo": {
+    "demo": true,
+    "kollaConnector": "demo",
+    "kollaConsumer": "demo",
+    "timezone": "America/Los_Angeles",
+    "passcode": "0000",
+    "providers": [
+      "Dr. Avery",
+      "Dr. Bennett",
+      "Dr. Castillo"
+    ],
+    "providerAliases": {},
+    "branding": {
+      "name": "Maple Grove Dental",
+      "sub": "Live demo · sample schedule",
+      "logo": null,
+      "accent": "#2fa39a",
+      "accentDeep": "#22847d",
+      "accentSoft": "#8fd2cb",
+      "welcomeMsg": "We're so glad you're here. Relax — you're in good hands."
     }
   }
 };

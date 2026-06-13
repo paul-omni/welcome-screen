@@ -146,7 +146,9 @@ export default async function handler(req, res) {
       }
     }
 
-    const useMock = usingMock();
+    // A `demo: true` office ALWAYS serves mock data — safe to share publicly even
+    // in production with a real Kolla key set. Otherwise mock only when no key.
+    const useMock = office.demo === true || usingMock();
     const appts = useMock ? mockAppointments(name, office) : await fetchTodaysAppointments(office, name);
 
     const patients = appts
