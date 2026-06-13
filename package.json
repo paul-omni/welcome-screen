@@ -1,0 +1,16 @@
+{
+  "name": "omni-welcome-screen",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "dev": "node scripts/dev-server.js",
+    "dev:mock": "MOCK=1 node scripts/dev-server.js",
+    "pull": "node scripts/pull.js",
+    "add-office": "node scripts/add-office.js",
+    "check": "node --check api/schedule.js && node --check offices.js",
+    "test": "node --test",
+    "test:watch": "node --test --watch"
+  }
+}
