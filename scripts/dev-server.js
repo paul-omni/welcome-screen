@@ -8,12 +8,22 @@
 // This is just for eyeballing branding/layout. Production still runs on Vercel.
 import "./_env.js";   // load .env.local (if present) before anything reads env
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import handler from "../api/schedule.js";
 import { OFFICES } from "../offices.js";
 
 const PORT = Number(process.env.PORT) || 3000;
+const ROOT = new URL("../", import.meta.url);
 const INDEX = new URL("../index.html", import.meta.url);
+
+// Static assets we serve directly (mirrors Vercel serving real files such as
+// /assets/inspire-logo.png; everything else falls through to index.html).
+const STATIC_TYPES = {
+  ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+  ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
+  ".ico": "image/x-icon", ".css": "text/css; charset=utf-8",
+  ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".otf": "font/otf",
+};
 
 // Minimal Vercel-style res shim around Node's ServerResponse.
 function shimRes(res) {
@@ -44,6 +54,22 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify({ error: "dev_server_error", detail: String(err) }));
     }
     return;
+  }
+
+  // Real static asset? Serve it (whitelisted extensions only, no path traversal).
+  const rel = decodeURIComponent(url.pathname).replace(/^\/+/, "");
+  const ext = rel.slice(rel.lastIndexOf(".")).toLowerCase();
+  if (rel && !rel.includes("..") && STATIC_TYPES[ext]) {
+    try {
+      const fileUrl = new URL(rel, ROOT);
+      const s = await stat(fileUrl);
+      if (s.isFile()) {
+        const buf = await readFile(fileUrl);
+        res.writeHead(200, { "Content-Type": STATIC_TYPES[ext] });
+        res.end(buf);
+        return;
+      }
+    } catch { /* fall through to index.html */ }
   }
 
   // Everything else → index.html (the vercel.json rewrite).

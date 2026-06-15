@@ -33,8 +33,8 @@
 // hand edits above this line, or just use `npm run add-office`.
 export const OFFICES = {
   "inspire-dental-tigard": {
-    "kollaConnector": "con_inspire_CONNECTOR_REPLACE",
-    "kollaConsumer": "con_inspire_CONSUMER_REPLACE",
+    "kollaConnector": "opendental",
+    "kollaConsumer": "Inspire Dental Tigard",
     "timezone": "America/Los_Angeles",
     "passcode": "4821",
     "providers": [
@@ -44,10 +44,10 @@ export const OFFICES = {
     "branding": {
       "name": "Inspire Dental",
       "sub": "Tigard, Oregon",
-      "logo": null,
-      "accent": "#3fa08c",
-      "accentDeep": "#2f7e6e",
-      "accentSoft": "#8fcabd",
+      "logo": "/assets/inspire-logo.png",
+      "accent": "#5b9491",
+      "accentDeep": "#46716f",
+      "accentSoft": "#a0c1bf",
       "welcomeMsg": "We're so glad you're here. Relax — you're in good hands."
     }
   },
@@ -60,8 +60,6 @@ export const OFFICES = {
       "Dr. Park"
     ],
     "providerAliases": {
-      "DR. J. ALVAREZ": "Dr. Alvarez",
-      "KIM, SUSAN DDS": "Dr. Kim"
     },
     "branding": {
       "name": "La Mirada One Dental",

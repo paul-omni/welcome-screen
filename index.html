@@ -72,6 +72,8 @@
   .mono{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;
     border:1px solid var(--line);background:var(--surface);font-family:var(--display);font-size:24px;color:var(--accent-deep);
     box-shadow:0 6px 20px color-mix(in srgb,var(--accent) 18%, transparent)}
+  .brand-logo{height:52px;width:auto;max-width:340px;object-fit:contain;display:block}
+  .brand-logo[hidden]{display:none}
   .brand .txt .name{font-family:var(--display);font-size:24px;font-weight:500}
   .brand .txt .sub{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--cream-dim);margin-top:1px}
   .meta-r{text-align:right}
@@ -101,9 +103,9 @@
     background:color-mix(in srgb,var(--accent) 6%, var(--surface));
     box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 16%, transparent),0 16px 32px rgba(60,45,30,.08)}
   .card .nm{font-family:var(--display);font-size:30px;font-weight:500;line-height:1.05;color:var(--ink);
-    padding-right:74px;overflow-wrap:anywhere}
+    overflow-wrap:anywhere}
   .card .meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-  .card .badge{position:absolute;top:16px;right:16px;font-size:10px;letter-spacing:.18em;
+  .card .badge{align-self:flex-start;font-size:10px;letter-spacing:.18em;
     text-transform:uppercase;padding:4px 9px;border-radius:20px;border:1px solid var(--line);color:var(--muted);background:var(--surface-2)}
   .card .badge.now{color:var(--accent-deep);border-color:color-mix(in srgb,var(--accent) 45%, transparent);
     background:color-mix(in srgb,var(--accent) 14%, var(--surface))}
@@ -198,6 +200,7 @@
 <div class="home">
   <div class="top">
     <div class="brand">
+      <img class="brand-logo" id="brand-logo" alt="" hidden>
       <div class="mono" id="mono">I</div>
       <div class="txt">
         <div class="name" id="p-name">Inspire Dental</div>
@@ -299,10 +302,22 @@ function applyTheme(p){
   r.setProperty("--accent", p.accent);
   r.setProperty("--accent-deep", p.accentDeep);
   r.setProperty("--accent-soft", p.accentSoft);
-  // logo image if configured, else monogram letter
-  $("#mono").innerHTML = p.logo
-    ? `<img src="${p.logo}" alt="${p.name||''}" style="width:30px;height:30px;object-fit:contain">`
-    : (p.mono || (p.name||"?").trim()[0] || "?");
+  // Configured logo shows as a full wordmark (replaces the monogram + name text);
+  // otherwise fall back to the monogram letter + name/sub.
+  const logoEl = $("#brand-logo");
+  if (p.logo) {
+    logoEl.src = p.logo;
+    logoEl.alt = p.name || "";
+    logoEl.hidden = false;
+    $("#mono").style.display = "none";
+    $(".brand .txt").style.display = "none";
+  } else {
+    logoEl.hidden = true;
+    logoEl.removeAttribute("src");
+    $("#mono").style.display = "";
+    $(".brand .txt").style.display = "";
+    $("#mono").innerHTML = p.mono || (p.name||"?").trim()[0] || "?";
+  }
   $("#p-name").textContent = p.name;
   $("#p-sub").textContent = p.sub;
   $("#w-practice").textContent = p.name;
