@@ -42,18 +42,18 @@ test("patient objects expose ONLY first_name/start/provider (no PII leak)", asyn
   });
 });
 
-test("live mode: filters cancelled, sorts by time, aliases providers, never leaks last name", async () => {
+test("live mode: filters cancelled, sorts by time, passes provider names through, never leaks last name", async () => {
   const kollaPayload = {
     appointments: [
       { id: "a3", status: "confirmed", start_time: "2030-01-01T17:00:00.000Z",
         contact: { given_name: "Robert", family_name: "Hidden", last_name: "Hidden" },
-        provider: { display_name: "DR. J. ALVAREZ" } },
+        provider: { display_name: "Dr. Park" } },
       { id: "a1", status: "confirmed", start_time: "2030-01-01T09:00:00.000Z",
         contact: { given_name: "Maria", last_name: "ShouldNotAppear" },
-        provider: { display_name: "KIM, SUSAN DDS" } },
+        provider: { display_name: "Dr. Park" } },
       { id: "a2", status: "cancelled", start_time: "2030-01-01T10:00:00.000Z",
         contact: { given_name: "Cancelled", last_name: "Person" },
-        provider: { display_name: "DR. J. ALVAREZ" } },
+        provider: { display_name: "Dr. Park" } },
     ],
   };
 
@@ -67,9 +67,9 @@ test("live mode: filters cancelled, sorts by time, aliases providers, never leak
       assert.equal(body.patients.length, 2);
       // sorted by start
       assert.deepEqual(body.patients.map(p => p.first_name), ["Maria", "Robert"]);
-      // provider aliases applied
-      assert.equal(body.patients[0].provider, "Dr. Kim");
-      assert.equal(body.patients[1].provider, "Dr. Alvarez");
+      // provider names pass through (no aliases configured for this office)
+      assert.equal(body.patients[0].provider, "Dr. Park");
+      assert.equal(body.patients[1].provider, "Dr. Park");
       // absolutely no last name anywhere in the payload
       assert.ok(!JSON.stringify(body).includes("Hidden"));
       assert.ok(!JSON.stringify(body).includes("ShouldNotAppear"));
