@@ -52,8 +52,8 @@ export const OFFICES = {
     }
   },
   "la-mirada-one-dental": {
-    "kollaConnector": "con_lamirada_CONNECTOR_REPLACE",
-    "kollaConsumer": "con_lamirada_CONSUMER_REPLACE",
+    "kollaConnector": "opendental",
+    "kollaConsumer": "La Mirada One Dental",
     "timezone": "America/Los_Angeles",
     "passcode": "5126",
     "providers": [
@@ -64,10 +64,10 @@ export const OFFICES = {
     "branding": {
       "name": "La Mirada One Dental",
       "sub": "La Mirada, California",
-      "logo": null,
-      "accent": "#5a8dd6",
-      "accentDeep": "#3f6fb5",
-      "accentSoft": "#a8c4ec",
+      "logo": "/assets/la-mirada-logo.png",
+      "accent": "#b8955a",
+      "accentDeep": "#94774a",
+      "accentSoft": "#d9c08c",
       "welcomeMsg": "Welcome in — we're happy to see you today."
     }
   },
@@ -103,10 +103,10 @@ export const OFFICES = {
     "branding": {
       "name": "Fresh Smile Dental",
       "sub": "Dallas, Texas",
-      "logo": null,
-      "accent": "#e8806e",
-      "accentDeep": "#cf6553",
-      "accentSoft": "#f3b3a6",
+      "logo": "assets/fresh-smile-logo.png",
+      "accent": "#22a447",
+      "accentDeep": "#1a7d36",
+      "accentSoft": "#9cdaa9",
       "welcomeMsg": "Welcome — we're so happy to see your smile."
     }
   },
@@ -122,10 +122,10 @@ export const OFFICES = {
     "branding": {
       "name": "Line Dental",
       "sub": "Aloha, OR",
-      "logo": null,
-      "accent": "#6a6fd0",
-      "accentDeep": "#5054b0",
-      "accentSoft": "#b3b6ea",
+      "logo": "assets/line-dental-logo.png",
+      "accent": "#1a1a1a",
+      "accentDeep": "#000000",
+      "accentSoft": "#d4d4d4",
       "welcomeMsg": "Welcome in — we're glad you're here today."
     }
   },
