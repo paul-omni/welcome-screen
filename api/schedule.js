@@ -120,8 +120,12 @@ async function fetchTodaysAppointments(office, slug) {
 }
 
 // First name only. Never emit last name / PII.
+// Prefer the patient's `preferred_name` when present (and non-empty), otherwise
+// fall back to `given_name` (then other name fields).
 function firstNameOf(appt) {
   const c = appt.contact || {};
+  const preferred = (c.preferred_name || "").trim();
+  if (preferred) return preferred;
   const given = c.given_name || c.first_name || (c.name || appt.patient_name || "").split(" ")[0];
   return (given || "Guest").trim();
 }
