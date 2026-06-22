@@ -77,6 +77,65 @@ function displayProvider(office, raw) {
   return aliases[raw] || raw || "";
 }
 
+// Kolla scopes every request to ONE office via these headers. Same set is used
+// for appointments AND contact lookups so both stay inside the office's consumer.
+function kollaHeaders(office) {
+  return {
+    Authorization: `Bearer ${process.env.KOLLA_API_KEY}`,
+    // connector-id → which integration / PMS type
+    // consumer-id  → which specific practice connection
+    "connector-id": office.kollaConnector,
+    "consumer-id": office.kollaConsumer,
+  };
+}
+
+// The appointment payload only carries a lightweight contact (given_name /
+// family_name) and a `contact_id`. `preferred_name` lives only on the FULL
+// Contact, so we resolve it here. Cached briefly + keyed by consumer so we don't
+// re-fetch the same patient repeatedly (and never cross office boundaries).
+const CONTACT_TTL_MS = 5 * 60 * 1000;   // 5 min — names rarely change intra-day
+const contactCache = new Map();         // `${consumer}::${contactId}` -> { value, expires }
+
+function contactUrl(contactId) {
+  // contact_id comes back as a resource name like "contacts/123" (casing varies).
+  const id = String(contactId).replace(/^contacts\//i, "");
+  return `${KOLLA_BASE}/contacts/${encodeURIComponent(id)}`;
+}
+
+async function fetchContact(office, contactId, slug) {
+  const cacheKey = `${office.kollaConsumer}::${contactId}`;
+  const cached = contactCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.value;
+
+  try {
+    const res = await fetch(contactUrl(contactId), { headers: kollaHeaders(office) });
+    if (!res.ok) {
+      console.error(`[kolla] ✗ contact lookup office=${slug} status=${res.status}`);
+      return null;
+    }
+    const contact = await res.json();
+    contactCache.set(cacheKey, { value: contact, expires: Date.now() + CONTACT_TTL_MS });
+    return contact;
+  } catch (err) {
+    console.error(`[kolla] ✗ contact lookup office=${slug} error`);
+    return null;
+  }
+}
+
+// Resolve the unique set of contact_ids on today's appointments to their full
+// contacts (deduped + parallel). Failures are non-fatal — we fall back to the
+// appointment's embedded short contact for that patient.
+async function resolveContacts(office, appts, slug) {
+  const ids = [...new Set(appts.map(a => a.contact_id).filter(Boolean))];
+  const map = new Map();
+  await Promise.all(ids.map(async (id) => {
+    const c = await fetchContact(office, id, slug);
+    if (c) map.set(id, c);
+  }));
+  console.log(`[kolla] ✓ contacts resolved office=${slug} requested=${ids.length} resolved=${map.size}`);
+  return map;
+}
+
 // ---- Pull today's appointments for ONE office, scoped to its consumer ---------
 async function fetchTodaysAppointments(office, slug) {
   // Restrict the call to the office's LOCAL "today" — computed in its own
@@ -92,21 +151,12 @@ async function fetchTodaysAppointments(office, slug) {
   // PHI-safe log: office + scope + zone/date only — never the API key or patient data.
   console.log(`[kolla] → request office=${slug} connector=${office.kollaConnector} consumer="${office.kollaConsumer}" tz=${tz} date=${day}`);
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${process.env.KOLLA_API_KEY}`,
-      // Kolla Unify scopes a request to ONE office via TWO headers:
-      //   connector-id → which integration / PMS type
-      //   consumer-id  → which specific practice connection
-      // Together they enforce source-level isolation between practices — this
-      // office physically cannot read another's PMS.
-      // TODO(paul): confirm the exact header names against your Kolla Unify
-      // dashboard/docs (some accounts use "X-Kolla-*" variants). Until then,
-      // these are the documented defaults.
-      "connector-id": office.kollaConnector,
-      "consumer-id": office.kollaConsumer,
-    },
-  });
+  // Kolla Unify scopes a request to ONE office via the connector/consumer headers
+  // (see kollaHeaders) — together they enforce source-level isolation between
+  // practices, so this office physically cannot read another's PMS.
+  // TODO(paul): confirm the exact header names against your Kolla Unify
+  // dashboard/docs (some accounts use "X-Kolla-*" variants).
+  const res = await fetch(url, { headers: kollaHeaders(office) });
 
   if (!res.ok) {
     console.error(`[kolla] ✗ failed office=${slug} status=${res.status}`);
@@ -120,13 +170,16 @@ async function fetchTodaysAppointments(office, slug) {
 }
 
 // First name only. Never emit last name / PII.
-// Prefer the patient's `preferred_name` when present (and non-empty), otherwise
-// fall back to `given_name` (then other name fields).
-function firstNameOf(appt) {
-  const c = appt.contact || {};
-  const preferred = (c.preferred_name || "").trim();
+// Prefer the patient's `preferred_name` (from the full Contact) when present and
+// non-empty, otherwise fall back to `given_name` — first from the full Contact,
+// then from the appointment's embedded short contact / other name fields.
+function firstNameOf(appt, fullContact) {
+  const full = fullContact || {};
+  const short = appt.contact || {};
+  const preferred = (full.preferred_name || "").trim();
   if (preferred) return preferred;
-  const given = c.given_name || c.first_name || (c.name || appt.patient_name || "").split(" ")[0];
+  const given = full.given_name || short.given_name || short.first_name
+    || (short.name || appt.patient_name || "").split(" ")[0];
   return (given || "Guest").trim();
 }
 
@@ -155,11 +208,15 @@ export default async function handler(req, res) {
     const useMock = office.demo === true || usingMock();
     const appts = useMock ? mockAppointments(name, office) : await fetchTodaysAppointments(office, name);
 
+    // Resolve full contacts (for `preferred_name`) only for real Kolla data; mock
+    // appointments already embed everything we need.
+    const contactsById = useMock ? new Map() : await resolveContacts(office, appts, name);
+
     const patients = appts
       .filter(a => !["cancelled", "no_show"].includes((a.status || "").toLowerCase()))
       .map(a => ({
         id: a.id || a.name,
-        first_name: firstNameOf(a),
+        first_name: firstNameOf(a, contactsById.get(a.contact_id)),
         start: a.start_time || a.startTime,
         provider: displayProvider(office, (a.provider && (a.provider.display_name || a.provider.name)) || ""),
       }))
