@@ -271,17 +271,25 @@ const OFFICE = (location.pathname.replace(/^\/+|\/+$/g, "").split("/")[0]
               || new URLSearchParams(location.search).get("office")
               || "").toLowerCase();
 
+// Optional `?date=YYYY-MM-DD` to preview a specific day's schedule (testing).
+// When absent, the server uses the office's local "today".
+const DATE_OVERRIDE = (new URLSearchParams(location.search).get("date") || "").trim();
+
 let roster = [];
 let OFFICE_TZ = null;   // IANA tz from the server; renders times in office-local zone
+let OFFICE_DATE = null; // YYYY-MM-DD the server actually served (echoes ?date= override)
 
 /* Pull this office's schedule + branding from our own API.
    Secrets (Kolla key) live in Vercel env vars, used only server-side. */
 async function fetchSchedule(office){
   try{
-    const r = await fetch('/api/schedule?office=' + encodeURIComponent(office));
+    const qs = new URLSearchParams({ office });
+    if(DATE_OVERRIDE) qs.set("date", DATE_OVERRIDE);   // test a specific day
+    const r = await fetch('/api/schedule?' + qs.toString());
     if(!r.ok) return [];                          // unknown office / error -> empty
     const data = await r.json();
     if(data.timezone) OFFICE_TZ = data.timezone;  // render times in the office's zone
+    if(data.date) OFFICE_DATE = data.date;        // the day the server served
     if(data.branding) applyTheme(data.branding);  // theme comes from the server
     populateProviders(data.providers);            // configurable doctor suggestions
     return (data.patients || []).map(a => ({...a, start:new Date(a.start)}));
@@ -410,7 +418,15 @@ $("#modal").addEventListener("click",e=>{ if(e.target===$("#modal")) closeModal(
 /* clock + date + boot + live polling */
 function tick(){ const now=new Date();
   $("#clock").textContent=now.toLocaleTimeString([], tzOpt({hour:"numeric",minute:"2-digit"}));
-  $("#today").textContent=now.toLocaleDateString([], tzOpt({weekday:"short", month:"short", day:"numeric"})); }
+  if(DATE_OVERRIDE && OFFICE_DATE){
+    // Show the overridden day (parsed at local noon to avoid tz rollover).
+    const [y,m,d]=OFFICE_DATE.split("-").map(Number);
+    $("#today").textContent=new Date(y,m-1,d,12,0,0)
+      .toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"});
+  } else {
+    $("#today").textContent=now.toLocaleDateString([], tzOpt({weekday:"short", month:"short", day:"numeric"}));
+  }
+}
 async function load(){ roster = await fetchSchedule(OFFICE); renderHome(); }
 
 // neutral first paint; real branding arrives from the server on first load()

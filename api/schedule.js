@@ -26,7 +26,7 @@ const REQUIRE_PASSCODE = false;   // flip to true for office-to-office isolation
 // onboarding script (`npm run add-office`) can edit it. Migrate this to Vercel KV
 // later — see the TODO at the top of offices.js.
 import { OFFICES } from "../offices.js";
-import { zonedToday } from "../lib/time.js";
+import { zonedToday, zonedDay, zonedWallToUTC } from "../lib/time.js";
 
 const KOLLA_BASE = "https://unify.kolla.dev/dental/v1";
 // Fallback timezone for any office missing one (offices should set their own).
@@ -47,19 +47,24 @@ const MOCK_FIRST_NAMES = ["Sarah", "James", "Maria", "David", "Aisha", "Liam",
   "Emma", "Noah", "Olivia", "Ethan", "Sofia", "Mateo", "Grace", "Owen"];
 const DEFAULT_PROVIDERS = ["Dr. Smith", "Dr. Lee"];
 
-function mockAppointments(slug, office) {
+function mockAppointments(slug, office, range) {
   // Doctors come from the office config (configurable), not a hardcoded list.
   const providers = (office.providers && office.providers.length)
     ? office.providers : DEFAULT_PROVIDERS;
+  const tz = office.timezone || DEFAULT_TZ;
+  // Place the fake roster on the requested day (office-local), so a `?date=`
+  // override is visible end-to-end in preview/mock too. `range.day` is YYYY-MM-DD.
+  const [Y, M, D] = (range.day).split("-").map(Number);
   // Seed a tiny PRNG from the slug so each office shows a stable, distinct roster.
   let seed = 7; for (const ch of slug) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
   const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
 
-  const count = 5 + Math.floor(rnd() * 5);   // 5–9 patients today
+  const count = 5 + Math.floor(rnd() * 5);   // 5–9 patients that day
   const out = [];
   for (let i = 0; i < count; i++) {
-    const t = new Date();
-    t.setHours(9 + Math.floor(rnd() * 8), [0, 15, 30, 45][Math.floor(rnd() * 4)], 0, 0);
+    const hour = 9 + Math.floor(rnd() * 8);
+    const minute = [0, 15, 30, 45][Math.floor(rnd() * 4)];
+    const t = zonedWallToUTC(tz, Y, M, D, hour, minute, 0, 0);
     out.push({
       id: `mock_${slug}_${i}`,
       contact: { given_name: MOCK_FIRST_NAMES[Math.floor(rnd() * MOCK_FIRST_NAMES.length)] },
@@ -136,15 +141,14 @@ async function resolveContacts(office, appts, slug) {
   return map;
 }
 
-// ---- Pull today's appointments for ONE office, scoped to its consumer ---------
-async function fetchTodaysAppointments(office, slug) {
-  // Restrict the call to the office's LOCAL "today" — computed in its own
-  // timezone so a Dallas (Central) office and a California (Pacific) office each
-  // fetch their own calendar day, even though this server runs in UTC.
+// ---- Pull one day's appointments for ONE office, scoped to its consumer -------
+// `range` is the resolved {startISO, endISO, day} window (today by default, or a
+// specific day when a `?date=` override is supplied).
+async function fetchTodaysAppointments(office, slug, range) {
   const tz = office.timezone || DEFAULT_TZ;
-  const { startISO, endISO, day } = zonedToday(tz);
+  const { startISO, endISO, day } = range;
 
-  // Server-side date filter so Kolla returns only the current date's schedule.
+  // Server-side date filter so Kolla returns only that date's schedule.
   const filter = `start_time >= '${startISO}' AND start_time <= '${endISO}'`;
   const url = `${KOLLA_BASE}/appointments?filter=${encodeURIComponent(filter)}`;
 
@@ -203,10 +207,26 @@ export default async function handler(req, res) {
       }
     }
 
+    // Optional `?date=YYYY-MM-DD` override (for testing a specific day). When
+    // absent, falls back to the office's local "today". Invalid dates → 400 so a
+    // typo doesn't silently return today's roster.
+    const tz = office.timezone || DEFAULT_TZ;
+    const dateParam = (req.query.date || "").toString().trim();
+    let range;
+    if (dateParam) {
+      range = zonedDay(tz, dateParam);
+      if (!range) {
+        res.setHeader("Cache-Control", "no-store");
+        return res.status(400).json({ error: "invalid_date", hint: "use YYYY-MM-DD" });
+      }
+    } else {
+      range = zonedToday(tz);
+    }
+
     // A `demo: true` office ALWAYS serves mock data — safe to share publicly even
     // in production with a real Kolla key set. Otherwise mock only when no key.
     const useMock = office.demo === true || usingMock();
-    const appts = useMock ? mockAppointments(name, office) : await fetchTodaysAppointments(office, name);
+    const appts = useMock ? mockAppointments(name, office, range) : await fetchTodaysAppointments(office, name, range);
 
     // Resolve full contacts (for `preferred_name`) only for real Kolla data; mock
     // appointments already embed everything we need.
@@ -233,6 +253,7 @@ export default async function handler(req, res) {
       branding: office.branding,
       providers: office.providers || [],
       timezone: office.timezone || DEFAULT_TZ,
+      date: range.day,
       patients,
     });
   } catch (err) {
