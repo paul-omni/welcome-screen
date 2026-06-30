@@ -73,7 +73,7 @@ export const OFFICES = {
   },
   "laguna-summit-dental": {
     "kollaConnector": "opendental",
-    "kollaConsumer": "Laguna Summit Dental",
+    "kollaConsumer": "Laguna Summit",
     "timezone": "America/Los_Angeles",
     "passcode": "6701",
     "providers": [
@@ -85,9 +85,9 @@ export const OFFICES = {
       "name": "Laguna Summit Dental",
       "sub": "Laguna Hills, California",
       "logo": null,
-      "accent": "#5aa17a",
-      "accentDeep": "#3f8060",
-      "accentSoft": "#a6d2ba",
+      "accent": "#b8955a",
+      "accentDeep": "#94774a",
+      "accentSoft": "#d9c08c",
       "welcomeMsg": "Welcome — we're delighted to care for you today."
     }
   },
