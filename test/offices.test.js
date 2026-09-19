@@ -44,3 +44,36 @@ test("validateOffice rejects an unsafe slug", () => {
   });
   assert.ok(errors.some(e => e.includes("url-safe")));
 });
+
+test("manual-only offices do not require Kolla identifiers", () => {
+  const errors = validateOffice("manual-family-dental", {
+    manualOnly: true,
+    kollaConnector: null,
+    kollaConsumer: null,
+    timezone: "America/Los_Angeles",
+    providers: ["Dr. Toader"],
+    branding: {
+      name: "Manual Family Dental",
+      accent: "#2e8a5f",
+      accentDeep: "#1f4e5c",
+      accentSoft: "#8fe0b4",
+      accentInk: "#ffffff",
+    },
+  });
+  assert.deepEqual(errors, []);
+});
+
+test("non-manual offices still require both Kolla identifiers", () => {
+  const errors = validateOffice("connected-family-dental", {
+    timezone: "America/Los_Angeles",
+    providers: ["Dr. Toader"],
+    branding: {
+      name: "Connected Family Dental",
+      accent: "#2e8a5f",
+      accentDeep: "#1f4e5c",
+      accentSoft: "#8fe0b4",
+    },
+  });
+  assert.ok(errors.some(e => e.includes("kollaConnector")));
+  assert.ok(errors.some(e => e.includes("kollaConsumer")));
+});

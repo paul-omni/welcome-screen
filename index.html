@@ -48,7 +48,7 @@
     --cream:#f6f0e4;  --cream-dim:#8c8174;  --slate-700:#3a322b;  --slate-800:#ffffff;  --slate-900:#faf5ec;
     --line:rgba(60,45,30,.10);  --line-strong:rgba(60,45,30,.18);
     /* --accent* are set per-practice at runtime */
-    --accent:#e0a64f;  --accent-deep:#c98a32;  --accent-soft:#f0c987;
+    --accent:#e0a64f;  --accent-deep:#c98a32;  --accent-soft:#f0c987; --accent-ink:#231605;
     --display:"Fraunces",Georgia,serif;
     --body:"Hanken Grotesk",system-ui,sans-serif;
   }
@@ -120,6 +120,30 @@
   .card.empty{cursor:default;align-items:center;justify-content:center;color:var(--muted);font-style:italic;border-style:dashed;box-shadow:none}
   .card.empty:hover{transform:none;border-color:var(--line);background:var(--surface)}
 
+  /* ─────────── MANUAL-ONLY OFFICE ─────────── */
+  .manual-console{display:none;flex:1;align-items:center;justify-content:center;padding:36px 24px 80px}
+  .manual-console.show{display:flex}
+  .manual-card{width:min(620px,100%);background:var(--surface);border:1px solid var(--line);
+    border-radius:24px;padding:42px;box-shadow:0 24px 70px rgba(31,78,92,.12)}
+  .manual-eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--accent-deep);font-weight:700}
+  .manual-card h1{font-family:var(--display);font-size:clamp(32px,5vw,48px);
+    font-weight:400;line-height:1.1;margin-top:10px}
+  .manual-card .intro{color:var(--muted);font-size:15px;line-height:1.55;margin-top:10px}
+  .manual-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
+  .manual-card label{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:7px}
+  .manual-card input{width:100%;font-family:var(--body);font-size:18px;color:var(--ink);
+    background:var(--surface-2);border:1px solid var(--line-strong);border-radius:12px;
+    padding:15px 16px;outline:none}
+  .manual-card input:focus{border-color:var(--accent-deep);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .manual-submit{width:100%;margin-top:20px;padding:15px 20px;font-size:16px}
+  @media(max-width:600px){
+    .manual-card{padding:30px 22px}
+    .manual-fields{grid-template-columns:1fr}
+  }
+
   /* demo-only switcher strip */
   .demo{z-index:2;border-top:1px solid var(--line);background:rgba(8,16,28,.7);backdrop-filter:blur(10px);
     padding:11px 46px;display:flex;align-items:center;gap:18px;font-size:12px;color:var(--cream-dim)}
@@ -147,7 +171,7 @@
   .btn{font-family:var(--body);font-weight:600;font-size:14px;border:none;border-radius:10px;cursor:pointer;
     padding:12px 20px;transition:transform .15s,filter .2s}
   .btn:active{transform:translateY(1px)}
-  .btn-accent{background:linear-gradient(180deg,var(--accent),var(--accent-deep));color:#231605}
+  .btn-accent{background:linear-gradient(180deg,var(--accent),var(--accent-deep));color:var(--accent-ink)}
   .btn-accent:hover{filter:brightness(1.06)}
   .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line-strong)}
   .btn-ghost:hover{color:var(--ink);border-color:var(--accent-deep)}
@@ -159,6 +183,9 @@
   .welcome.show{display:flex}
   .welcome .grain{position:absolute;inset:0;opacity:.05;mix-blend-mode:multiply;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+  .welcome .welcome-logo{position:absolute;top:28px;left:30px;width:min(210px,44vw);
+    max-height:58px;object-fit:contain;object-position:left center;opacity:0}
+  .welcome .welcome-logo[hidden]{display:none}
   .welcome .practice{font-size:12px;letter-spacing:.38em;text-transform:uppercase;color:var(--accent-deep);opacity:0}
   .welcome .greet{font-family:var(--display);font-weight:300;font-size:clamp(41px,6vw,77px);color:var(--slate-700);margin-top:18px;opacity:0}
   .welcome .first{font-family:var(--display);font-weight:500;font-size:clamp(77px,15.6vw,202px);line-height:.95;
@@ -169,6 +196,7 @@
   .welcome .tag{font-size:clamp(15px,1.6vw,19px);color:#5b6577;margin-top:24px;opacity:0;max-width:30ch;line-height:1.55}
   .welcome .mline{font-size:13px;letter-spacing:.06em;color:#8a93a3;margin-top:10px;opacity:0}
   .welcome.show .practice{animation:rise .7s ease forwards .05s}
+  .welcome.show .welcome-logo:not([hidden]){animation:rise .7s ease forwards .05s}
   .welcome.show .greet{animation:rise .7s ease forwards .2s}
   .welcome.show .first{animation:rise .9s cubic-bezier(.2,.8,.2,1) forwards .34s}
   .welcome.show .rule{width:120px}
@@ -218,6 +246,24 @@
     <span class="count" id="count"></span>
   </div>
   <div class="roster" id="roster"></div>
+  <div class="manual-console" id="manual-console">
+    <form class="manual-card" id="manual-form">
+      <div class="manual-eyebrow">Patient welcome</div>
+      <h1>Welcome a patient</h1>
+      <p class="intro">Enter the patient&apos;s first name and provider to open their welcome screen.</p>
+      <div class="manual-fields">
+        <div>
+          <label for="manual-name">Patient first name</label>
+          <input type="text" id="manual-name" autocomplete="off" placeholder="First name" required>
+        </div>
+        <div>
+          <label for="manual-provider">Provider</label>
+          <input type="text" id="manual-provider" autocomplete="off" placeholder="Dr. Toader" list="prov-list">
+        </div>
+      </div>
+      <button class="btn btn-accent manual-submit" type="submit">Open welcome screen →</button>
+    </form>
+  </div>
 </div>
 
 <!-- ADD WALK-IN -->
@@ -240,6 +286,7 @@
 <!-- WELCOME TAKEOVER -->
 <div class="welcome" id="welcome">
   <div class="grain"></div>
+  <img class="welcome-logo" id="w-logo" alt="" hidden>
   <div class="practice" id="w-practice">Inspire Dental</div>
   <div class="greet">Welcome,</div>
   <div class="first" id="w-first">Sarah</div>
@@ -278,6 +325,8 @@ const DATE_OVERRIDE = (new URLSearchParams(location.search).get("date") || "").t
 let roster = [];
 let OFFICE_TZ = null;   // IANA tz from the server; renders times in office-local zone
 let OFFICE_DATE = null; // YYYY-MM-DD the server actually served (echoes ?date= override)
+let MANUAL_ONLY = false;
+let OFFICE_PROVIDERS = [];
 
 /* Pull this office's schedule + branding from our own API.
    Secrets (Kolla key) live in Vercel env vars, used only server-side. */
@@ -291,7 +340,10 @@ async function fetchSchedule(office){
     if(data.timezone) OFFICE_TZ = data.timezone;  // render times in the office's zone
     if(data.date) OFFICE_DATE = data.date;        // the day the server served
     if(data.branding) applyTheme(data.branding);  // theme comes from the server
-    populateProviders(data.providers);            // configurable doctor suggestions
+    MANUAL_ONLY = data.manualOnly === true;
+    OFFICE_PROVIDERS = data.providers || [];
+    populateProviders(OFFICE_PROVIDERS);           // configurable doctor suggestions
+    setManualMode(MANUAL_ONLY);
     return (data.patients || []).map(a => ({...a, start:new Date(a.start)}));
   }catch(e){ return []; }
 }
@@ -310,18 +362,27 @@ function applyTheme(p){
   r.setProperty("--accent", p.accent);
   r.setProperty("--accent-deep", p.accentDeep);
   r.setProperty("--accent-soft", p.accentSoft);
+  r.setProperty("--accent-ink", p.accentInk || "#231605");
   // Configured logo shows as a full wordmark (replaces the monogram + name text);
   // otherwise fall back to the monogram letter + name/sub.
   const logoEl = $("#brand-logo");
+  const welcomeLogoEl = $("#w-logo");
   if (p.logo) {
     logoEl.src = p.logo;
     logoEl.alt = p.name || "";
     logoEl.hidden = false;
+    welcomeLogoEl.src = p.logo;
+    welcomeLogoEl.alt = p.name || "";
+    welcomeLogoEl.hidden = false;
+    $("#w-practice").style.display = "none";
     $("#mono").style.display = "none";
     $(".brand .txt").style.display = "none";
   } else {
     logoEl.hidden = true;
     logoEl.removeAttribute("src");
+    welcomeLogoEl.hidden = true;
+    welcomeLogoEl.removeAttribute("src");
+    $("#w-practice").style.display = "";
     $("#mono").style.display = "";
     $(".brand .txt").style.display = "";
     $("#mono").innerHTML = p.mono || (p.name||"?").trim()[0] || "?";
@@ -335,6 +396,16 @@ function applyTheme(p){
 function populateProviders(list){
   const dl = $("#prov-list"); if(!dl) return;
   dl.innerHTML = (list || []).map(name => `<option value="${name}"></option>`).join("");
+  const manualProvider = $("#manual-provider");
+  if(manualProvider && !manualProvider.value && list && list.length) {
+    manualProvider.value = list[0];
+  }
+}
+function setManualMode(enabled){
+  $(".roster-head").style.display = enabled ? "none" : "";
+  $("#roster").style.display = enabled ? "none" : "";
+  $("#manual-console").classList.toggle("show", enabled);
+  if(enabled) setTimeout(() => $("#manual-name").focus(), 0);
 }
 function isNow(a){ const n=Date.now(); return a.start.getTime()>n-20*60000 && a.start.getTime()<n+30*60000; }
 function hourLabel(h){ const ap=h<12?"AM":"PM"; let hr=h%12; if(hr===0)hr=12; return `${hr} ${ap}`; }
@@ -392,7 +463,15 @@ function showWelcome(name, provider){
   const w=$("#welcome"); w.classList.remove("show"); void w.offsetWidth; w.classList.add("show");
   // stays up until "Back to roster" — no auto-dismiss
 }
-function backToRoster(){ $("#welcome").classList.remove("show"); closeEdit(); }
+function backToRoster(){
+  $("#welcome").classList.remove("show");
+  closeEdit();
+  if(MANUAL_ONLY){
+    $("#manual-name").value = "";
+    $("#manual-provider").value = OFFICE_PROVIDERS[0] || "";
+    setTimeout(() => $("#manual-name").focus(), 0);
+  }
+}
 
 /* ---- inline name edit ---- */
 function openEdit(){ $("#w-input").value=$("#w-first").textContent; $("#w-editfield").classList.add("show");
@@ -405,6 +484,13 @@ function openModal(){ $("#m-name").value=""; $("#m-prov").value=""; $("#modal").
 function closeModal(){ $("#modal").classList.remove("show"); }
 function goWalkIn(){ const n=$("#m-name").value.trim(); if(!n) return; const pr=$("#m-prov").value.trim();
   closeModal(); showWelcome(n, pr || ""); }
+function goManual(e){
+  e.preventDefault();
+  const name = $("#manual-name").value.trim();
+  if(!name) return;
+  const provider = $("#manual-provider").value.trim() || OFFICE_PROVIDERS[0] || "";
+  showWelcome(name, provider);
+}
 
 /* ---- bindings ---- */
 $("#w-edit").onclick=openEdit; $("#w-first").onclick=openEdit;
@@ -414,6 +500,7 @@ $("#w-back").onclick=backToRoster;
 $("#m-cancel").onclick=closeModal; $("#m-go").onclick=goWalkIn;
 $("#m-name").addEventListener("keydown",e=>{ if(e.key==="Enter")goWalkIn(); if(e.key==="Escape")closeModal(); });
 $("#modal").addEventListener("click",e=>{ if(e.target===$("#modal")) closeModal(); });
+$("#manual-form").addEventListener("submit",goManual);
 
 /* clock + date + boot + live polling */
 function tick(){ const now=new Date();
@@ -432,11 +519,12 @@ async function load(){ roster = await fetchSchedule(OFFICE); renderHome(); }
 // neutral first paint; real branding arrives from the server on first load()
 applyTheme({ name:"", sub:"", logo:null, mono:" ",
   accent:"#e0a64f", accentDeep:"#c98a32", accentSoft:"#f0c987",
+  accentInk:"#231605",
   welcomeMsg:"We're so glad you're here." });
 tick(); setInterval(tick,15000);
 load();
 // re-poll /api/schedule so reschedules/add-ons appear live
-setInterval(()=>{ if(!$("#welcome").classList.contains("show") && !$("#modal").classList.contains("show")) load(); }, 45000);
+setInterval(()=>{ if(!MANUAL_ONLY && !$("#welcome").classList.contains("show") && !$("#modal").classList.contains("show")) load(); }, 45000);
 </script>
 </body>
 </html>

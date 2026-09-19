@@ -7,9 +7,11 @@ its own data**.
 ## How it works
 - Each office opens its own path URL: `https://welcome.omnidentalservice.com/inspire`
 - `index.html` reads the office slug from the URL path and calls `/api/schedule`.
-- `/api/schedule` (Vercel function) looks up the office, pulls **that office's**
-  schedule from Kolla (scoped to that office's connection), and returns only
-  `first_name`, `start`, `provider`, plus the office's branding.
+- `/api/schedule` (Vercel function) looks up the office. Connected offices pull
+  **that office's** schedule from Kolla (scoped to its connection) and return
+  only `first_name`, `start`, `provider`, plus the office's branding.
+- A `manualOnly` office never calls Kolla. Its unique URL opens a direct form
+  where staff type the patient's first name and choose or type the provider.
 - The screen shows today's patients grouped by hour. Staff tap a patient → a
   full-screen welcome appears (name editable; "Add walk-in" for unscheduled).
 
@@ -58,7 +60,8 @@ npm run pull -- inspire     # print one office's roster in the terminal
 - **No key in `.env.local`** → **mock mode**: a deterministic, PHI-free fake
   roster per office, so you can see branding/layout without Kolla.
 - **Key in `.env.local`** → **live mode**: pulls real appointments from Kolla.
-- Every API response carries `X-Data-Source: mock | kolla` so the mode is obvious.
+- Every API response carries `X-Data-Source: manual | mock | kolla` so the mode
+  is obvious.
 
 ## Tests
 Zero-dependency suite on Node's built-in runner:
@@ -99,12 +102,23 @@ Every office is one row in `offices.js`, keyed by its URL slug:
 - **Custom colors:** `accent` / `accentDeep` / `accentSoft` theme the whole screen.
 - **Configurable doctors:** `providers` is the office's doctor list; `providerAliases`
   maps raw Kolla provider names to friendly display names in live mode.
+- **No-Kolla offices:** set `manualOnly: true`; `kollaConnector` and
+  `kollaConsumer` may be `null`. The API returns no roster and the page displays
+  the direct name/provider form. `Toader Family Dentistry` uses this mode at
+  `/toader-family-dentistry`.
+- **Dark accent colors:** set `branding.accentInk: "#ffffff"` so text on
+  accent-filled buttons remains readable.
 
 ### Onboard a client in one command
 ```
 npm run add-office -- --slug winder --connector con_type_123 --consumer con_winder_123 \
   --name "Winder Dental Care" --sub "Family & Cosmetic" \
   --accent "#e0a64f" --providers "Dr. Patel, Dr. Romero"
+
+# No Kolla/PMS connection:
+npm run add-office -- --slug manual-family-dental --manual-only \
+  --name "Manual Family Dental" --accent "#2e8a5f" --accent-ink "#ffffff" \
+  --providers "Dr. Toader"
 ```
 Validates the row, derives the accent shades from a single color, writes it to
 `offices.js`, and prints the office's local + production URLs and kiosk command.

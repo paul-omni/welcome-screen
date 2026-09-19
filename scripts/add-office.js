@@ -14,12 +14,14 @@
 //
 // Flags:
 //   --slug        (required)  URL path, e.g. "winder"  →  /winder
-//   --connector   (required)  Kolla connector-id (which integration / PMS type)
-//   --consumer    (required)  Kolla consumer-id (which specific practice)
+//   --connector   (required unless manual) Kolla connector-id / PMS type
+//   --consumer    (required unless manual) Kolla consumer-id / practice scope
+//   --manual-only             no Kolla/PMS roster; staff type name + provider
 //   --name        (required)  display name
 //   --sub                     sub-line under the name
 //   --accent                  primary accent hex (deep/soft derived if omitted)
 //   --accent-deep --accent-soft   override the derived shades
+//   --accent-ink              text on accent-filled buttons (use #fff for dark accents)
 //   --timezone                IANA tz (default America/Los_Angeles), e.g. America/Chicago
 //   --providers               comma-separated doctor names, e.g. "Dr. Patel, Dr. Romero"
 //   --logo                    logo image URL (defaults to a monogram letter)
@@ -63,10 +65,11 @@ async function main() {
   if (!isValidSlug(slug)) die(`--slug must be url-safe (a-z, 0-9, -). got "${slug}"`);
   const name = (args.name || "").toString().trim();
   if (!name) die("--name is required (display name, e.g. --name \"Winder Dental Care\")");
+  const manualOnly = args["manual-only"] === true;
   const connector = (args.connector || "").toString().trim();
-  if (!connector) die("--connector is required (Kolla connector-id). Use a placeholder if you don't have it yet.");
+  if (!manualOnly && !connector) die("--connector is required unless --manual-only is set.");
   const consumer = (args.consumer || "").toString().trim();
-  if (!consumer) die("--consumer is required (Kolla consumer-id). Use a placeholder if you don't have it yet.");
+  if (!manualOnly && !consumer) die("--consumer is required unless --manual-only is set.");
 
   const accentInput = (args.accent || "#e0a64f").toString().trim();
   if (!isHex(accentInput)) die(`--accent must be a 6-digit hex color. got "${accentInput}"`);
@@ -84,8 +87,9 @@ async function main() {
     .split(",").map(s => s.trim()).filter(Boolean);
 
   const office = {
-    kollaConnector: connector,
-    kollaConsumer: consumer,
+    ...(manualOnly ? { manualOnly: true } : {}),
+    kollaConnector: connector || null,
+    kollaConsumer: consumer || null,
     timezone: (args.timezone || "America/Los_Angeles").toString().trim(),
     passcode: (args.passcode || "").toString().trim() || String(1000 + Math.floor(Math.random() * 9000)),
     providers,
@@ -95,6 +99,7 @@ async function main() {
       sub: (args.sub || "").toString().trim() || "",
       logo: args.logo ? args.logo.toString().trim() : null,
       accent, accentDeep, accentSoft,
+      ...(args["accent-ink"] ? { accentInk: args["accent-ink"].toString().trim() } : {}),
       welcomeMsg: (args.welcome || "").toString().trim() || "We're so glad you're here.",
     },
   };

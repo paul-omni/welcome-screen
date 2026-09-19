@@ -223,14 +223,25 @@ export default async function handler(req, res) {
       range = zonedToday(tz);
     }
 
+    // A manual-only office has no PMS connection by design. Do not let the
+    // environment's mock mode invent a roster for it, and never call Kolla.
+    // The front end uses this flag to render the direct name/provider form.
+    const manualOnly = office.manualOnly === true;
+
     // A `demo: true` office ALWAYS serves mock data — safe to share publicly even
     // in production with a real Kolla key set. Otherwise mock only when no key.
-    const useMock = office.demo === true || usingMock();
-    const appts = useMock ? mockAppointments(name, office, range) : await fetchTodaysAppointments(office, name, range);
+    const useMock = !manualOnly && (office.demo === true || usingMock());
+    const appts = manualOnly
+      ? []
+      : useMock
+        ? mockAppointments(name, office, range)
+        : await fetchTodaysAppointments(office, name, range);
 
     // Resolve full contacts (for `preferred_name`) only for real Kolla data; mock
     // appointments already embed everything we need.
-    const contactsById = useMock ? new Map() : await resolveContacts(office, appts, name);
+    const contactsById = (manualOnly || useMock)
+      ? new Map()
+      : await resolveContacts(office, appts, name);
 
     const patients = appts
       .filter(a => !["cancelled", "no_show"].includes((a.status || "").toLowerCase()))
@@ -245,13 +256,15 @@ export default async function handler(req, res) {
 
     // Short cache so several screens at one office don't hammer Kolla, but data
     // still refreshes within a minute. (No cache for mock previews.)
-    res.setHeader("X-Data-Source", useMock ? "mock" : "kolla");
-    res.setHeader("Cache-Control", useMock ? "no-store" : "private, max-age=45");
+    const dataSource = manualOnly ? "manual" : useMock ? "mock" : "kolla";
+    res.setHeader("X-Data-Source", dataSource);
+    res.setHeader("Cache-Control", manualOnly || useMock ? "no-store" : "private, max-age=45");
     // `providers` (non-PHI) lets the screen offer doctor suggestions for walk-ins.
     // `timezone` lets the screen render times in the office's local zone.
     return res.status(200).json({
       branding: office.branding,
       providers: office.providers || [],
+      manualOnly,
       timezone: office.timezone || DEFAULT_TZ,
       date: range.day,
       patients,

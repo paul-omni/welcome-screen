@@ -33,6 +33,35 @@ test("mock rosters only use the office's configured doctors", async () => {
   });
 });
 
+test("manual-only office returns branding and providers without calling Kolla", async () => {
+  await withEnv({ KOLLA_API_KEY: "live-key", MOCK: undefined }, async () => {
+    await withStubbedFetch(async () => {
+      throw new Error("manual-only office must never call Kolla");
+    }, async () => {
+      const { status, headers, body } = await callSchedule({
+        office: "toader-family-dentistry",
+      });
+
+      assert.equal(status, 200);
+      assert.equal(headers["X-Data-Source"], "manual");
+      assert.equal(body.manualOnly, true);
+      assert.equal(body.branding.name, "Toader Family Dentistry");
+      assert.deepEqual(body.providers, ["Dr. Toader"]);
+      assert.deepEqual(body.patients, []);
+    });
+  });
+});
+
+test("mock mode does not invent a roster for a manual-only office", async () => {
+  await withEnv({ MOCK: "1" }, async () => {
+    const { headers, body } = await callSchedule({
+      office: "toader-family-dentistry",
+    });
+    assert.equal(headers["X-Data-Source"], "manual");
+    assert.deepEqual(body.patients, []);
+  });
+});
+
 test("patient objects expose ONLY first_name/start/provider (no PII leak)", async () => {
   await withEnv({ MOCK: "1" }, async () => {
     const { body } = await callSchedule({ office: "inspire-dental-tigard" });

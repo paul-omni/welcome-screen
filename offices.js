@@ -9,12 +9,23 @@
 //   • demo (optional)  — if true, ALWAYS serves fake (PHI-free) data, even in
 //                        production with a real key. Safe to share publicly (e.g.
 //                        the "demo" office → /demo).
+//   • manualOnly (opt) — if true, this office has NO PMS connection. The server
+//                        never calls Kolla and never invents a mock roster; it
+//                        returns an empty patient list. The screen then shows a
+//                        "welcome a patient" console (type a first name + pick a
+//                        provider) instead of today's schedule. Use this for a
+//                        client who wants the welcome screen before — or without
+//                        — a Kolla integration. kollaConnector/kollaConsumer are
+//                        not required for these offices.
 //   • passcode         — only used if REQUIRE_PASSCODE is on in api/schedule.js
 //   • providers        — the office's doctors (configurable). Shown in mock mode
 //                        and offered as suggestions for walk-ins.
 //   • providerAliases  — optional { rawKollaName: "Friendly Name" } to clean up
 //                        how live Kolla provider names are displayed.
 //   • branding         — name, sub, logo URL or null, accent colors, welcomeMsg.
+//                        accentInk (optional) is the text color on accent-filled
+//                        buttons; set it to #ffffff when the accent is dark, or
+//                        the default dark-brown label goes unreadable.
 //
 // ⚠️  PLACEHOLDERS TO REPLACE before going live (search "REPLACE"):
 //     • every kollaConnector + kollaConsumer  → your real Kolla connector/consumer IDs
@@ -127,6 +138,27 @@ export const OFFICES = {
       "accentDeep": "#000000",
       "accentSoft": "#d4d4d4",
       "welcomeMsg": "Welcome in — we're glad you're here today."
+    }
+  },
+  "toader-family-dentistry": {
+    "manualOnly": true,
+    "kollaConnector": null,
+    "kollaConsumer": null,
+    "timezone": "America/Los_Angeles",
+    "passcode": "2417",
+    "providers": [
+      "Dr. Toader"
+    ],
+    "providerAliases": {},
+    "branding": {
+      "name": "Toader Family Dentistry",
+      "sub": "",
+      "logo": "/assets/toader-family-dentistry-logo.png",
+      "accent": "#2e8a5f",
+      "accentDeep": "#1f4e5c",
+      "accentSoft": "#8fe0b4",
+      "accentInk": "#ffffff",
+      "welcomeMsg": "We're so glad you're here. Relax — you're in good hands."
     }
   },
   "demo": {
